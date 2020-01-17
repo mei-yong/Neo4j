@@ -1,0 +1,10 @@
+
+Cypher Shell
+https://neo4j.com/docs/operations-manual/current/tools/cypher-shell/
+
+Directory to access cypher-shell - remember that queries in shell must end with semicolon
+cd /home/.../neo4j/bin
+
+cypher-shell -u neo4j -p secret
+
+
