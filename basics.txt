@@ -1,0 +1,54 @@
+
+Important Directories
+
+Directory to place files to import
+cd /home/.../neo4j/import
+
+Directory to access cypher-shell - remember that queries in shell must end with semicolon
+cd /home/.../neo4j/bin
+
+--------------------------------------------------
+
+// A query that really demonstrates the power of a graph db vs a relational db
+// Find all direct reports and how many people they manage up to 3 levels down
+MATCH (boss)-[:MANAGES*0..3]->(sub),
+    (sub)-[:MANAGES*1..3]->(report)
+WHERE boss.name = 'John Doe'
+RETURN sub.name AS subordinate,
+    COUNT(report) AS total
+
+--------------------------------------------------
+
+Useful Cypher queries - Fraudulent Bank Customers & Transactions
+
+// Money transfers above x amount
+MATCH path = (mt:MoneyTransfer)-[m:SEND]-(:BankAccount)<-[hba:HAS_BANKACCOUNT]-(ah:AccountHolder)
+WHERE mt.amount > x
+RETURN path
+
+// Top 10 IP addresses by purchase activity
+Places where there might be a lot of legit purchases with different cards - airport, mall, family home
+
+// Top bank cards used by multiple accounts
+One site, same card, multiple accounts
+
+// E-commerce fraud - find purchases happening in different places at roughly the same time
+MATCH (ip)<-[:FROM_IP]-(p:Purchase)-[:WITH_CARD]->(bc)<-[:WITH_CARD]-(p2:Purchase)-[:FROM_IP]->(ip2)
+WHERE p2.time > (p.time - 60000) AND p2.time < (p.time + 60000) AND ip <> ip2
+WITH bc, [p,p2] AS purchases
+UNWIND purchases as prs
+MATCH path = (bc)<-[wc:WITH_CARD]-(prs)-[fi:FROM_IP]->(ip:IP)-[li:LOCATED_IN]->(s:State)
+RETURN path
+
+// E-commerce fraud - but with subsequent purchases
+MATCH (ip)<-[:FROM_IP]-(p:Purchase)-[:WITH_CARD]->(bc)<-[:WITH_CARD]-(p2:Purchase)-[:FROM_IP]->(ip2)
+WHERE p2.time > (p.time - 60000) AND p2.time < (p.time + 60000) AND ip <> ip2
+WITH bc, [p,p2] AS purchases
+UNWIND purchases as prs
+MATCH path = (bc)<-[wc:WITH_CARD]-(prs)-[fi:FROM_IP]->(ip:IP)-[li:LOCATED_IN]->(s:State)
+OPTIONAL MATCH (bc)<-[suswv:WITH_CARD]-(sus)
+WHERE sus.time > prs.time
+RETURN path, sus, suswc
+
+
+
