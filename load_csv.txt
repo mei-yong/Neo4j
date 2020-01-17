@@ -1,0 +1,98 @@
+Neo4j Load CSV Tutorial 
+https://www.youtube.com/watch?v=Eh_79goBRUk
+
+
+// Test - check out the load
+LOAD CSV WITH HEADERS FROM
+'url' AS line
+WITH line
+LIMIT 1
+RETURN line
+
+// Splitting up date strings
+* gives back a collection
+LOAD CSV WITH HEADERS FROM
+'url' AS line
+WITH SPLIT(line.`Date received`. '/') AS date
+LIMIT 1
+RETURN date
+
+// Splitting up date strings
+* gives back a year if format DD/MM/YYYY
+LOAD CSV WITH HEADERS FROM
+'url' AS line
+WITH SPLIT(line.`Date received`. '/') AS date
+LIMIT 1
+RETURN date[2]
+
+
+
+/////////////////////////////////////////////////////////
+
+
+// Mac & Linux - execute below in Shell
+// Windows - Browser > i symbol > Classic UI web admin > Power tool Console *must run each query individually
+
+
+
+///// 1st iteration /////
+
+// Create uniqueness constraints - basically, indexing * very important to do this for anything that involves MERGE
+CREATE CONSTRAINT ON (c:Complaint) ASSERT c.id IS UNIQUE;
+CREATE CONSTRAINT ON (c:Company) ASSERT c.name IS UNIQUE;
+CREATE CONSTRAINT ON (r:Response) ASSERT r.name IS UNIQUE;
+
+// Don't forget periodic commit - default is 1000
+USING PERIODIC COMMIT 500
+LOAD CSV WITH HEADERS FROM
+'url' AS line
+WITH line, SPLIT(line.`Date received`. '/') AS date
+
+// Make the ID an integer - Neo4j will always read CSV inputs as strings
+CREATE (complaint:Complaint {id: TOINT(line.`Complaint ID`}))
+SET complaint.year = TOINT(date[2]),
+	complaint.month = TOINT(date[1),
+	complaint.day = TOINT(date[0])
+
+// Uppercase the company name in case the name is recorded with funny casing
+MERGE (company:Company {name: UPPER(line.Company)})
+MERGE (response:Response {name: UPPER(line.`Company response`)})
+
+CREATE (complaint)-[:AGAINST]->(company)
+CREATE (response)-[r:TO]->(complaint)
+
+// When value is Yes, make it true. Else false
+SET r.timely = CASE line.`Timely response?` WHEN 'Yes' THEN true ELSE false END,
+r.disputed = CASE line.`Consumer disputed?` WHEN 'Yes' THEN true ELSE false END
+
+;
+
+
+
+
+///// 2nd iteration /////
+
+CREATE CONSTRAINT ON (p:Product) ASSERT p.name IS UNIQUE;
+CREATE CONSTRAINT ON (i:Issue) ASSERT i.name IS UNIQUE;
+
+USING PERIODIC COMMIT 500
+LOAD CSV WITH HEADERS FROM
+'url' AS line
+
+inputs as strings
+MATCH (complaint:Complaint {id: TOINT(line.`Complaint ID`}))
+
+MERGE (product:Product {name: UPPER(line.Product)})
+MERGE (issue:Issue {name: UPPER(line.Issue)})
+
+CREATE (complaint)-[:ABOUT]->(product)
+CREATE (complaint)-[:WITH]->(issue)
+;
+
+
+
+///// 3rd iteration /////
+
+// Omit rows from the CSV that don't have a sub-product or sub-issue
+// In Excel, create 2 new tables taking the Complaint ID and the associated not null sub item
+
