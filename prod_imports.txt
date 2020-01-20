@@ -29,7 +29,7 @@ CALL apoc.load.csv({url}) yield map as row return row
 CREATE (p:Person) SET p = row
 ', {batchSize:10000, iterateList:true, parallel:true});
 
-
+----------------------------------------------------------------------
 
 https://neo4j.com/docs/labs/apoc/current/import/import-csv/
 https://neo4j.com/docs/operations-manual/current/tools/import/file-header-format/
@@ -54,5 +54,145 @@ CALL apoc.import.csv(
   [{fileName: 'file:/knows.csv', type: 'KNOWS'}],
   {delimiter: '|', arrayDelimiter: ',', stringIds: false}
 )
+
+
+-------------------------------------------------------------------
+
+https://neo4j.com/developer/guide-import-csv/
+https://neo4j.com/docs/operations-manual/current/tools/import/
+
+# Shell Syntax for importing a set of CSV files
+
+# Reference: List of syntax
+https://neo4j.com/docs/operations-manual/current/tools/import/syntax/
+
+# Reference: Details of what each option means
+https://neo4j.com/docs/operations-manual/current/tools/import/options/
+
+# Detailed info on the import tool
+https://neo4j.com/docs/operations-manual/current/tutorial/import-tool/
+
+Works on CSVs compressed using zip or gzip - e.g. file.csv.zip, file.csv.gz
+
+neo4j-admin import [--verbose]
+                   [--high-io[=<true/false>]]
+                   [--cache-on-heap]
+                   [--ignore-empty-strings[=<true/false>]]
+                   [--ignore-extra-columns[=<true/false>]]
+                   [--legacy-style-quoting[=<true/false>]]
+                   [--multiline-fields[=<true/false>]]
+                   [--normalize-types[=<true/false>]]
+                   [--skip-bad-entries-logging[=<true/false>]]
+                   [--skip-bad-relationships[=<true/false>]]
+                   [--skip-duplicate-nodes[=<true/false>]]
+                   [--trim-strings[=<true/false>]]
+                   [--additional-config=<path>]
+                   [--array-delimiter=<char>]
+                   [--bad-tolerance=<num>]
+                   [--database=<database>]
+                   [--delimiter=<char>]
+                   [--id-type=<idType>]
+                   [--input-encoding=<character-set>]
+                   [--max-memory=<size>]
+                   [--processors=<num>]
+                   [--quote=<char>]
+                   [--read-buffer-size=<size>]
+                   [--report-file=<path>]
+                   --nodes=[<label>[:<label>]...=]<files>...
+                   [--nodes=[<label>[:<label>]...=]<files>...]...
+                   [--relationships=[<type>=]<files>...]...
+                   
+# Example
+neo4j-admin import --nodes import/movies_header.csv,import/movies.csv \
+--nodes import/actors_header.csv,import/actors.csv \
+--relationships import/roles_header.csv,import/roles.csv                   
+                   
+
+# CSV Headers Formatting
+https://neo4j.com/docs/operations-manual/current/tools/import/file-header-format/
+
+Header files: how the data fields should be interpreted
+<name>:<field_type>
+
+Data types - default is string
+int
+long
+float
+double
+boolean - Boolean values are true if they match exactly the text true. All other values are false
+byte
+short
+char
+string
+point - see neo4j.com/docs/cypher-manual/4.0/functions/spatial/
+date - see neo4j.com/docs/cypher-manual/4.0/syntax/temporal/#cypher-temporal-instants
+localtime - see neo4j.com/docs/cypher-manual/4.0/syntax/temporal/#cypher-temporal-instants
+time - neo4j.com/docs/cypher-manual/4.0/syntax/temporal/#cypher-temporal-instants
+localdatetime - see neo4j.com/docs/cypher-manual/4.0/syntax/temporal/#cypher-temporal-instants
+datetime - see neo4j.com/docs/cypher-manual/4.0/syntax/temporal/#cypher-temporal-instants
+duration
+
+To define an array type, append [] to the type. By default, array values are separated by ;. A different delimiter can be specified with --array-delimiter
+
+Values that contain the delimiter character need to be escaped by enclosing in double quotation marks, or by using a different delimiter character with the --delimiter option
+
+:ID,name:string,joined:date,active:boolean,points:int,city:string,location:point{crs:WGS-84}
+user01,Joe Soap,2017-05-05,true,10,"Malmo","{latitude:55.6121514, longitude:12.9950357}"
+user02,Jane Doe,2017-08-21,true,15,"London","{y:51.507222, x:-0.1275}"
+user03,Moe Know,2018-02-17,false,7,"San Mateo","{latitude:37.554167, longitude:-122.313056, height: 100, crs:'WGS-84-3D'}"
+
+Node files - ID + LABEL + properties
+movieID:ID,title:string,year:int,:LABEL
+tt0133093,"The Matrix",1999,Movie
+tt0234215,"The Matrix Reloaded",2003,Movie;Sequel
+tt0242653,"The Matrix Revolutions",2003,Movie;Sequel
+
+personId:ID,name,:LABEL
+keanu,"Keanu Reeves",Actor
+laurence,"Laurence Fishburne",Actor
+carrieanne,"Carrie-Anne Moss",Actor
+
+
+Relationship files - TYPE + START_ID + END_ID
+
+:START_ID,role,:END_ID,:TYPE
+keanu,"Neo",tt0133093,ACTED_IN
+keanu,"Neo",tt0234215,ACTED_IN
+keanu,"Neo",tt0242653,ACTED_IN
+laurence,"Morpheus",tt0133093,ACTED_IN
+laurence,"Morpheus",tt0234215,ACTED_IN
+laurence,"Morpheus",tt0242653,ACTED_IN
+carrieanne,"Trinity",tt0133093,ACTED_IN
+carrieanne,"Trinity",tt0234215,ACTED_IN
+carrieanne,"Trinity",tt0242653,ACTED_IN
+
+
+ID Space Identifiers
+
+movieId:ID(Movie-ID),title,year:int,:LABEL
+1,"The Matrix",1999,Movie
+2,"The Matrix Reloaded",2003,Movie;Sequel
+3,"The Matrix Revolutions",2003,Movie;Sequel
+
+personId:ID(Actor-ID),name,:LABEL
+1,"Keanu Reeves",Actor
+2,"Laurence Fishburne",Actor
+3,"Carrie-Anne Moss",Actor
+
+:START_ID(Actor-ID),role,:END_ID(Movie-ID),:TYPE
+1,"Neo",1,ACTED_IN
+1,"Neo",2,ACTED_IN
+1,"Neo",3,ACTED_IN
+2,"Morpheus",1,ACTED_IN
+2,"Morpheus",2,ACTED_IN
+2,"Morpheus",3,ACTED_IN
+3,"Trinity",1,ACTED_IN
+3,"Trinity",2,ACTED_IN
+3,"Trinity",3,ACTED_IN
+
+
+
+neo4j-admin import --nodes=import/movies4-header.csv,import/movies4-part.* --nodes=import/actors4-header.csv,import/actors4-part.* --relationships=import/roles4-header.csv,import/roles4-part.*
+
 
 
