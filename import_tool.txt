@@ -1,67 +1,11 @@
 
-Import data from relational db
-https://neo4j.com/developer/working-with-data/
+Import Tool
 
-APOC: Awesome Procedures on Cypher
-https://neo4j.com/docs/labs/apoc/current/
-
-APOC Importing
-https://neo4j.com/docs/labs/apoc/current/import/
-
-https://neo4j.com/docs/labs/apoc/current/import/load-csv/
-
-CALL apoc.load.csv('test.csv')
-YIELD lineNo, map, list
-RETURN *;
-
-CALL apoc.load.csv('test.csv', {skip:1, limit:1, header:true, ignore:['name'],
-   mapping:{
-     age: {type:'int'},
-     beverage: {array:true, arraySep:';', name:'drinks'}
-   }
-})
-YIELD lineNo, map, list
-RETURN *;
-
-CALL apoc.periodic.iterate('
-CALL apoc.load.csv({url}) yield map as row return row
-','
-CREATE (p:Person) SET p = row
-', {batchSize:10000, iterateList:true, parallel:true});
-
-----------------------------------------------------------------------
-
-https://neo4j.com/docs/labs/apoc/current/import/import-csv/
-https://neo4j.com/docs/operations-manual/current/tools/import/file-header-format/
-
-:ID,name,joined:date,active:boolean,points:int
-user01,Joe Soap,2017-05-05,true,10
-user02,Jane Doe,2017-08-21,true,15
-user03,Moe Know,2018-02-17,false,7
-
-CALL apoc.import.csv([{fileName: 'file:/persons.csv', labels: ['Person']}], [], {})
-
-
-:ID|name:STRING|speaks:STRING[]
-1|John|en,fr
-2|Jane|en,de
-
-:START_ID|:END_ID|since:INT
-1|2|2016
-
-CALL apoc.import.csv(
-  [{fileName: 'file:/persons.csv', labels: ['Person']}],
-  [{fileName: 'file:/knows.csv', type: 'KNOWS'}],
-  {delimiter: '|', arrayDelimiter: ',', stringIds: false}
-)
-
-
--------------------------------------------------------------------
+* Bulk import CSVs by providing a schema, tables, and running in shell
+* Works on CSVs compressed using zip or gzip - e.g. file.csv.zip, file.csv.gz
 
 https://neo4j.com/developer/guide-import-csv/
 https://neo4j.com/docs/operations-manual/current/tools/import/
-
-# Shell Syntax for importing a set of CSV files
 
 # Reference: List of syntax
 https://neo4j.com/docs/operations-manual/current/tools/import/syntax/
@@ -72,7 +16,6 @@ https://neo4j.com/docs/operations-manual/current/tools/import/options/
 # Detailed info on the import tool
 https://neo4j.com/docs/operations-manual/current/tutorial/import-tool/
 
-Works on CSVs compressed using zip or gzip - e.g. file.csv.zip, file.csv.gz
 
 neo4j-admin import [--verbose]
                    [--high-io[=<true/false>]]
@@ -193,6 +136,9 @@ personId:ID(Actor-ID),name,:LABEL
 
 
 neo4j-admin import --nodes=import/movies4-header.csv,import/movies4-part.* --nodes=import/actors4-header.csv,import/actors4-part.* --relationships=import/roles4-header.csv,import/roles4-part.*
+
+
+neo4j-admin import --nodes:Entity=/home/bitnami/stack/neo4j/import/nodes.csv --relationships:PAID=/home/bitnami/stack/neo4j/import/rels.csv --id-type=STRING --ignore-missing-nodes=true 
 
 
 
