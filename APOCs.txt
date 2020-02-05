@@ -1,0 +1,11 @@
+
+Reference: APOC User Guide
+https://neo4j.com/docs/labs/apoc/current/
+
+// Find a particular business node based on properties and return its connections to 4 levels deep
+MATCH (a:Business) WHERE ${whereClause}
+CALL apoc.path.subgraphAll(a, {maxLevel:4})
+YIELD nodes, relationships
+RETURN nodes, relationships;
+
+
