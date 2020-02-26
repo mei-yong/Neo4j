@@ -230,7 +230,7 @@ pd.set_option('display.max_columns', 1000)
 def create_noderel_files():
     
     # Initialise file path variables
-    bucket_name = 'venti-dev-498572-bqoutput'
+    bucket_name = 'BUCKET'
     nodes_name = 'nodes_tolabel.csv'
     rels_name = 'rels_tolabel.csv'
     
