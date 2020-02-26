@@ -210,8 +210,82 @@ personId:ID(Actor-ID),name,:LABEL
 
 neo4j-admin import --nodes=import/movies4-header.csv,import/movies4-part.* --nodes=import/actors4-header.csv,import/actors4-part.* --relationships=import/roles4-header.csv,import/roles4-part.*
 
-
 neo4j-admin import --nodes:Entity=/home/bitnami/stack/neo4j/import/nodes.csv --relationships:PAID=/home/bitnami/stack/neo4j/import/rels.csv --id-type=STRING --ignore-missing-nodes=true 
 
+neo4j-admin import --mode=csv --nodes=/home/bitnami/stack/neo4j/import/nodes.csv --relationships="/home/bitnami/stack/neo4j/import/rels1.csv, /home/bitnami/stack/neo4j/import/rels2.csv" --id-type=STRING --ignore-missing-nodes=true 
+
+------------------------------------------------------------------
+
+# Python script that renames column names with colon (:) symbol
 
 
+# Import libraries
+import pandas as pd
+from google.cloud import storage
+
+# Show all rows and columns in console print
+pd.set_option('display.max_rows', 1000)
+pd.set_option('display.max_columns', 1000)
+
+def create_noderel_files():
+    
+    # Initialise file path variables
+    bucket_name = 'venti-dev-498572-bqoutput'
+    nodes_name = 'nodes_tolabel.csv'
+    rels_name = 'rels_tolabel.csv'
+    
+    # Set up access to the GCS bucket
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    
+    # Download the data to local directory
+    files_to_download = [nodes_name, rels_name]
+    
+    for file in files_to_download:
+        blob = bucket.blob(file)
+        blob.download_to_filename(file)
+    
+    print("File downloads from GCS bucket complete")
+
+    # Import the data from local directory
+    nodes = pd.read_csv(nodes_name, low_memory=False)
+    rels = pd.read_csv(rels_name, low_memory=False)
+    
+    # Rename the column names
+    nodes.rename(columns={'LABEL':':LABEL', 'node_id':'node_id:ID'}, inplace=True)
+    rels.rename(columns={'TYPE':':TYPE', 'START_ID':':START_ID', 'END_ID':':END_ID'}, inplace=True)
+    
+    print("nodes quick DQ check")
+    print(nodes.shape)
+    print(nodes.columns)
+    print(nodes.head(10))
+    print(nodes.sample(10))
+    print(nodes.tail(10))
+    
+    print("relationships quick DQ check")
+    print(rels.shape)
+    print(rels.columns)
+    print(rels.head(10))
+    print(rels.sample(10))
+    print(rels.tail(10))
+    
+    
+    # Output to CSV & copy to GCS bucket
+    nodes.to_csv("nodes.csv", index=False)
+    blob = bucket.blob("nodes.csv")
+    blob.upload_from_filename("nodes.csv")
+    
+    print("Nodes CSV file output to local directory & GCS bucket")
+    
+    # Output to CSV & copy to GCS bucket
+    rels.to_csv("rels.csv", index=False)
+    blob = bucket.blob("rels.csv")
+    blob.upload_from_filename("rels.csv")
+    
+    print("Rels CSV file output to local directory & GCS bucket")
+
+
+if __name__== "__main__":
+    create_noderel_files()
+    
+    
